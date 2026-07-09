@@ -1,7 +1,13 @@
 package com.a0.common.players
 
-import java.util.*
+import kotlinx.serialization.Serializable
 
+@Serializable
+data class RegisterRequest(
+    val players: List<Player>,
+)
+
+@Serializable
 data class Player(
-    val playerID: UUID,
+    val playerID: String, // gets parsed as UUID
 )
