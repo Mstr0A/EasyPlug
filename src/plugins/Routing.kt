@@ -1,6 +1,7 @@
 package com.a0.plugins
 
 import com.a0.routes.init
+import com.a0.routes.sessionRoute
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 
@@ -10,5 +11,6 @@ fun Application.configureRouting() {
         install(IgnoreTrailingSlash)
 
         init()
+        sessionRoute()
     }
 }
