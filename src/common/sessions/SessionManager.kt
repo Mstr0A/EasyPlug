@@ -6,15 +6,23 @@ import java.util.concurrent.ConcurrentHashMap
 
 object SessionManager {
     // Session variables
-    private val newSessions: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
-    private val registeredSessions: ConcurrentHashMap<UUID, Session> = ConcurrentHashMap()
-    private val liveSessions: ConcurrentHashMap<UUID, Session> = ConcurrentHashMap()
+    private val _newSessions: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
+    val newSessions: Set<UUID> get() = _newSessions
+
+    private val _registeredSessions: ConcurrentHashMap<UUID, Session> = ConcurrentHashMap()
+    val registeredSessions: Map<UUID, Session> get() = _registeredSessions
+
+    private val _liveSessions: ConcurrentHashMap<UUID, Session> = ConcurrentHashMap()
+    val liveSessions: Map<UUID, Session> get() = _liveSessions
 
     fun createNewSession(): UUID {
         val newSessionUUID = UUID.randomUUID()
-        newSessions.add(newSessionUUID)
+        _newSessions.add(newSessionUUID)
 
         return newSessionUUID
+    }
+
+    fun cancelSession(sessionUUID: UUID) {
     }
 
     fun registerSession(
@@ -23,9 +31,9 @@ object SessionManager {
     ) {
         val sessionToRegister = Session(sessionUUID, playerList)
 
-        newSessions.remove(sessionUUID)
+        _newSessions.remove(sessionUUID)
 
         // Register the session
-        registeredSessions[sessionUUID] = sessionToRegister
+        _registeredSessions[sessionUUID] = sessionToRegister
     }
 }
