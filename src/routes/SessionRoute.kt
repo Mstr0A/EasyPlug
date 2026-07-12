@@ -12,6 +12,7 @@ import io.ktor.websocket.*
 
 fun Route.sessionRoute() {
     route("/session") {
+        // Creating new sessions
         route("/new") {
             get {
                 val newSessionUUID = SessionManager.createNewSession()
@@ -19,7 +20,9 @@ fun Route.sessionRoute() {
             }
         }
 
+        // All work after session creation
         route("/{sessionID}") {
+            // Register the players
             route("/register") {
                 post {
                     val sessionID = call.receiveSessionID() ?: return@post
@@ -36,6 +39,8 @@ fun Route.sessionRoute() {
                     call.respond(HttpStatusCode.NoContent)
                 }
             }
+
+            // Cancellation
             route("/cancel") {
                 post {
                     val sessionID = call.receiveSessionID() ?: return@post
@@ -45,6 +50,8 @@ fun Route.sessionRoute() {
                     call.respond(HttpStatusCode.NoContent)
                 }
             }
+
+            // If all is clear, start the session
             webSocket("/start") {
                 val sessionID = call.receiveSessionID() ?: return@webSocket
 
