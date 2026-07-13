@@ -32,7 +32,16 @@ fun Route.sessionRoute() {
                         return@post
                     }
 
-                    val registerRequest = call.receive<RegisterRequest>()
+                    val registerRequest =
+                        try {
+                            call.receive<RegisterRequest>()
+                        } catch (_: ContentTransformationException) {
+                            call.respond(
+                                HttpStatusCode.UnprocessableEntity,
+                                mapOf("error" to "cannot process provided data"),
+                            )
+                            return@post
+                        }
 
                     SessionManager.registerSession(sessionID, registerRequest.players)
 

@@ -23,6 +23,8 @@ object SessionManager {
     }
 
     fun cancelSession(sessionUUID: UUID) {
+        _newSessions.remove(sessionUUID)
+        _registeredSessions.remove(sessionUUID)
     }
 
     fun registerSession(
