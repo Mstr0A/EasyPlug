@@ -1,2 +1,2 @@
-kotlin -linguist-vendored
-kotlin.bat -linguist-vendored
+kotlin linguist-vendored=true
+kotlin.bat linguist-vendored=true
