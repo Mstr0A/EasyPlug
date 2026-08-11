@@ -2,20 +2,22 @@ product:
   type: jvm/app
 
 dependencies:
-  - io.ktor:ktor-server-call-logging:3.4.1
-  - io.ktor:ktor-server-core:3.4.1
-  - io.ktor:ktor-server-content-negotiation:3.4.1
-  - io.ktor:ktor-serialization-kotlinx-json:3.4.1
-  - io.ktor:ktor-server-websockets:3.4.1
+  - io.ktor:ktor-server-call-logging:3.5.2
+  - io.ktor:ktor-server-core:3.5.2
+  - io.ktor:ktor-server-content-negotiation:3.5.2
+  - io.ktor:ktor-serialization-kotlinx-json:3.5.2
+  - io.ktor:ktor-server-websockets:3.5.2
   - org.jetbrains.exposed:exposed-core:0.61.0
   - org.jetbrains.exposed:exposed-jdbc:0.61.0
   - com.h2database:h2:2.3.232
-  - io.ktor:ktor-server-netty:3.4.1
+  - io.ktor:ktor-server-netty:3.5.2
   - ch.qos.logback:logback-classic:1.4.14
-  - io.ktor:ktor-server-config-yaml:3.4.1
+  - io.ktor:ktor-server-config-yaml:3.5.2
+  - io.ktor:ktor-server-auth:3.5.2
+  - io.ktor:ktor-server-auth-api-key:3.5.2
 
 test-dependencies:
-  - io.ktor:ktor-server-test-host:3.4.1
+  - io.ktor:ktor-server-test-host:3.5.2
   - $kotlin.test.junit
 
 settings:

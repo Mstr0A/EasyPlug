@@ -4,3 +4,6 @@ ktor:
       - com.a0.ApplicationKt.module
   deployment:
     port: $PORT:8080
+
+api:
+  key: ${API_KEY}

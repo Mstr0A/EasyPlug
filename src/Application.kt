@@ -13,5 +13,6 @@ fun Application.module() {
     configureSerialization()
     configureSockets()
     configureDatabases()
+    configureAuth()
     configureRouting()
 }

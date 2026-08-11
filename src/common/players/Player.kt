@@ -9,5 +9,5 @@ data class RegisterRequest(
 
 @Serializable
 data class Player(
-    val playerID: String, // gets parsed as UUID
+    val playerID: String,
 )
