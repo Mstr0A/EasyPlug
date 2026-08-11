@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="business">
+<head>
+    <meta charset="UTF-8">
+    <title>anticheat // live</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        body { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace; }
+        .flagged-row { background-color: rgba(248, 114, 114, 0.08); }
+    </style>
+</head>
+<body class="min-h-screen bg-base-300">
+
+<div class="navbar bg-base-100 border-b border-base-content/10 px-6">
+    <div class="flex-1 flex items-center gap-2">
+        <span class="badge badge-sm" id="status-badge">connecting</span>
+        <span class="text-lg font-medium lowercase">anticheat // live</span>
+    </div>
+</div>
+
+<main class="p-6">
+
+    <div class="stats shadow bg-base-100 mb-6" id="summary-stats">
+        <div class="stat">
+            <div class="stat-title">players</div>
+            <div class="stat-value text-lg" id="stat-players">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">flagged</div>
+            <div class="stat-value text-lg text-error" id="stat-flagged">0</div>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto bg-base-100 rounded-box shadow">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>player</th>
+                <th>status</th>
+                <th>pos</th>
+                <th>speed</th>
+                <th>speed precision</th>
+                <th>speed recall</th>
+                <th>flags</th>
+            </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+        </table>
+        <div class="text-center text-base-content/50 py-10 hidden" id="empty">no telemetry yet</div>
+    </div>
+
+</main>
+
+<script>
+    const statusBadge = document.getElementById('status-badge');
+    const rowsEl = document.getElementById('rows');
+    const emptyEl = document.getElementById('empty');
+    const statPlayers = document.getElementById('stat-players');
+    const statFlagged = document.getElementById('stat-flagged');
+
+    let failCount = 0;
+    const FAIL_LIMIT = 5; // ~5s of no response before the dashboard clears itself
+
+    function fmt(n) {
+        return Number(n).toFixed(2);
+    }
+
+    function render(players) {
+        statPlayers.textContent = players.length;
+        statFlagged.textContent = players.filter(p => p.flagged).length;
+
+        if (!players.length) {
+            rowsEl.innerHTML = '';
+            emptyEl.classList.remove('hidden');
+            return;
+        }
+        emptyEl.classList.add('hidden');
+
+        rowsEl.innerHTML = players.map(p => `
+    <tr class="${p.flagged ? 'flagged-row' : ''}">
+      <td class="font-medium">${p.playerId}</td>
+      <td><span class="badge ${p.flagged ? 'badge-error' : 'badge-success'} badge-outline badge-sm">${p.flagged ? 'flagged' : 'clean'}</span></td>
+      <td class="text-base-content/70">${fmt(p.posX)}, ${fmt(p.posY)}, ${fmt(p.posZ)}</td>
+      <td>${fmt(p.lastSpeed)} u/s</td>
+      <td>${fmt(p.accuracy.speedHackPrecision * 100)}%</td>
+      <td>${fmt(p.accuracy.speedHackRecall * 100)}%</td>
+      <td class="text-xs text-base-content/60">${p.flags.join(' / ') || '-'}</td>
+    </tr>
+  `).join('');
+    }
+
+    async function poll() {
+        try {
+            const res = await fetch('/session/demo/status');
+            if (!res.ok) {
+                handleFailure();
+                return;
+            }
+            statusBadge.textContent = 'live';
+            statusBadge.className = 'badge badge-sm badge-success';
+            failCount = 0;
+            const players = await res.json();
+            render(players);
+        } catch (e) {
+            handleFailure();
+        }
+    }
+
+    function handleFailure() {
+        failCount++;
+        statusBadge.textContent = 'down';
+        statusBadge.className = 'badge badge-sm badge-error';
+        if (failCount >= FAIL_LIMIT) {
+            render([]);
+        }
+    }
+
+    poll();
+    setInterval(poll, 1000);
+</script>
+
+</body>
+</html>
