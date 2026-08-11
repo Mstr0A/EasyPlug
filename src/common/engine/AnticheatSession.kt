@@ -161,28 +161,32 @@ class AnticheatSession {
      * running session — unlike shutdown(), nothing is drained or reset.
      */
     fun snapshot(): List<PlayerSnapshot> =
-        playerStats.map { (playerId, stats) ->
-            val speedAcc = speedHackAccuracy[playerId] ?: DetectorAccuracy()
-            val aimAcc = aimbotAccuracy[playerId] ?: DetectorAccuracy()
-            val flags = playerFlags[playerId] ?: emptyList()
-            PlayerSnapshot(
-                playerId = playerId,
-                posX = stats.lastX,
-                posY = stats.lastY,
-                posZ = stats.lastZ,
-                lastSpeed = lastSpeed[playerId] ?: 0f,
-                flagged = flags.isNotEmpty(),
-                flags = flags.toList(),
-                accuracy =
-                    AccuracyReport(
-                        playerId = playerId,
-                        speedHackPrecision = speedAcc.precision(),
-                        speedHackRecall = speedAcc.recall(),
-                        aimbotPrecision = aimAcc.precision(),
-                        aimbotRecall = aimAcc.recall(),
-                    ),
-            )
-        }
+        playerStats
+            .filterKeys { playerId ->
+                val elapsed = lastSeen[playerId]?.elapsedNow()?.inWholeSeconds
+                elapsed != null && elapsed < STALE_AFTER_SECONDS
+            }.map { (playerId, stats) ->
+                val speedAcc = speedHackAccuracy[playerId] ?: DetectorAccuracy()
+                val aimAcc = aimbotAccuracy[playerId] ?: DetectorAccuracy()
+                val flags = playerFlags[playerId] ?: emptyList()
+                PlayerSnapshot(
+                    playerId = playerId,
+                    posX = stats.lastX,
+                    posY = stats.lastY,
+                    posZ = stats.lastZ,
+                    lastSpeed = lastSpeed[playerId] ?: 0f,
+                    flagged = flags.isNotEmpty(),
+                    flags = flags.toList(),
+                    accuracy =
+                        AccuracyReport(
+                            playerId = playerId,
+                            speedHackPrecision = speedAcc.precision(),
+                            speedHackRecall = speedAcc.recall(),
+                            aimbotPrecision = aimAcc.precision(),
+                            aimbotRecall = aimAcc.recall(),
+                        ),
+                )
+            }
 
     fun accuracyReport(): List<AccuracyReport> =
         playerStats.keys.map { playerId ->
