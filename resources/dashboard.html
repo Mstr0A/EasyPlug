@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>anticheat // telemetry</title>
+    <title>anticheat // speed-telemetry</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,7 +19,6 @@
             --text2:      #8B92A5;
             --dim:        #525A6B;
             --cyan:       #00C2FF;
-            --purple:     #B562FF;
             --red:        #FF3E50;
             --red-dim:    rgba(255, 62, 80, 0.10);
             --amber:      #FFB830;
@@ -76,7 +75,6 @@
 
         .nav-title { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
         .nav-divider { width: 1px; height: 20px; background: var(--border2); }
-        .nav-sub { font-size: 10px; color: var(--dim); letter-spacing: 0.06em; font-style: italic; }
         #last-update { font-size: 10px; color: var(--dim); letter-spacing: 0.05em; }
 
         /* ── Clear Button ── */
@@ -125,13 +123,14 @@
 
         /* ── Main Grid ── */
         main { padding: 28px 32px; flex: 1; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 16px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
 
         /* ── Card ── */
         .card {
             background: var(--surface); border: 1px solid var(--border);
             border-radius: 8px; padding: 20px; position: relative;
             display: flex; flex-direction: column; gap: 16px;
+            transition: border-color 0.2s ease;
         }
         .card::before {
             content: ''; position: absolute; left: 0; top: 0; bottom: 0;
@@ -140,8 +139,8 @@
         .card.clean::before { background: var(--cyan); }
         .card.flagged::before { background: var(--red); animation: pulse-strip 2s infinite; }
         .card.flagged {
-            border-color: rgba(255, 62, 80, 0.2);
-            background: linear-gradient(140deg, var(--red-dim) 0%, var(--surface) 55%);
+            border-color: rgba(255, 62, 80, 0.3);
+            background: linear-gradient(140deg, var(--red-dim) 0%, var(--surface) 60%);
         }
 
         @keyframes pulse-strip { 0%, 100% { box-shadow: 0 0 8px var(--red); opacity: 1; } 50% { box-shadow: none; opacity: 0.45; } }
@@ -155,8 +154,7 @@
             font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
             padding: 3px 8px; border-radius: 4px; border: 1px solid; width: fit-content;
         }
-        .profile-badge.rage { color: var(--red); border-color: rgba(255,62,80,0.3); background: rgba(255,62,80,0.06); }
-        .profile-badge.closet, .profile-badge.burst { color: var(--amber); border-color: rgba(255,184,48,0.3); background: rgba(255,184,48,0.06); }
+        .profile-badge.speedster { color: var(--red); border-color: rgba(255,62,80,0.3); background: rgba(255,62,80,0.06); }
         .profile-badge.legit { color: var(--dim); border-color: var(--border2); }
         .profile-badge.human { color: var(--cyan); border-color: rgba(0,194,255,0.3); background: rgba(0,194,255,0.06); }
 
@@ -164,19 +162,35 @@
         .status-badge.flagged { color: var(--red); border-color: rgba(255, 62, 80, 0.35); background: rgba(255, 62, 80, 0.07); }
 
         /* ── Telemetry Panels ── */
-        .panel-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .data-panel { background: var(--surface2); padding: 12px; border-radius: 6px; border: 1px solid var(--border2); }
-        .panel-title { font-size: 9px; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .data-panel { background: var(--surface2); padding: 14px; border-radius: 6px; border: 1px solid var(--border2); display: flex; flex-direction: column; gap: 10px; }
+        .panel-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+        .panel-title { font-size: 9px; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; display: block; }
 
-        .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px; }
-        .data-row:last-child { margin-bottom: 0; }
+        .speed-readout { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+        .speed-sub { font-size: 10px; color: var(--text2); }
+
+        /* ── Velocity Gauge / Bar ── */
+        .gauge-track {
+            width: 100%; height: 6px; background: var(--border); border-radius: 3px;
+            overflow: hidden; position: relative; margin-top: 4px;
+        }
+        .gauge-fill {
+            height: 100%; width: 0%; border-radius: 3px; transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        .threshold-marker {
+            position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text);
+            left: 35%; /* 7.0u/s out of max 20u/s scale */
+            box-shadow: 0 0 6px rgba(255,255,255,0.5);
+            z-index: 2;
+        }
+
+        .data-row { display: flex; justify-content: space-between; font-size: 11px; }
         .d-label { color: var(--text2); }
         .d-val { font-weight: 600; font-variant-numeric: tabular-nums; }
 
         .val-hot { color: var(--red); text-shadow: 0 0 8px rgba(255,62,80,0.4); }
         .val-warm { color: var(--amber); }
         .val-cool { color: var(--cyan); }
-        .val-purp { color: var(--purple); }
 
         /* ── Flags ── */
         .flags { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -200,7 +214,7 @@
     <div class="nav-left">
         <div class="nav-brand">
             <div class="live-dot" id="live-dot"></div>
-            <span class="nav-title">anticheat // live</span>
+            <span class="nav-title">anticheat // speed-kinematics</span>
         </div>
     </div>
     <div class="nav-right">
@@ -222,7 +236,7 @@
         <span class="summary-value cyan" id="stat-players">0</span>
     </div>
     <div class="summary-stat s-flagged" id="ss-flagged">
-        <span class="summary-label">Anomalies Detected</span>
+        <span class="summary-label">Velocity Anomalies</span>
         <span class="summary-value red" id="stat-flagged">0</span>
     </div>
 </div>
@@ -230,8 +244,8 @@
 <main>
     <div class="grid" id="grid"></div>
     <div id="empty" class="visible">
-        <div class="empty-icon">◌</div>
-        <span class="empty-title">AWAITING TELEMETRY</span>
+        <div class="empty-icon">⚡</div>
+        <span class="empty-title">AWAITING SPEED TELEMETRY</span>
     </div>
 </main>
 
@@ -243,35 +257,31 @@
     const statFlagged = document.getElementById('stat-flagged');
 
     let lastKnownPlayers = [];
-    let failCount = 0;
 
     const fmt = (n, d = 2) => Number(n || 0).toFixed(d);
 
     function speedClass(s) {
-        if (s > 7.5) return 'val-hot';
-        if (s > 6.0) return 'val-warm';
+        if (s > 7.0) return 'val-hot';
+        if (s > 5.5) return 'val-warm';
         return 'val-cool';
-    }
-
-    function angClass(v) {
-        if (v > 45.0) return 'val-hot';
-        if (v > 20.0) return 'val-warm';
-        return 'val-purp';
     }
 
     function profileData(p) {
         if (!p) return { cls: '', lbl: '' };
         const key = p.toLowerCase();
         if (key === 'human_player') return { cls: 'human', lbl: 'human' };
-        if (key.includes('rage'))   return { cls: 'rage', lbl: 'rage bot' };
-        if (key.includes('closet')) return { cls: 'closet', lbl: 'closet bot' };
-        if (key.includes('burst'))  return { cls: 'burst', lbl: 'burst bot' };
-        return { cls: 'legit', lbl: 'unknown' };
+        if (key.includes('speedster') || key.includes('rage')) return { cls: 'speedster', lbl: 'speedster' };
+        return { cls: 'legit', lbl: 'legit' };
     }
 
     function renderCard(p) {
         const prof = profileData(p.cheaterProfile);
         const flags = Array.isArray(p.flags) ? p.flags : [];
+        const speed = p.lastSpeed || 0;
+
+        // Gauge scaling: Max scale assumed around 20u/s for visual representation
+        const gaugePercent = Math.min(100, (speed / 20.0) * 100);
+        const gaugeColor = speed > 7.0 ? 'var(--red)' : speed > 5.5 ? 'var(--amber)' : 'var(--cyan)';
 
         return `
         <div class="card ${p.flagged ? 'flagged' : 'clean'}">
@@ -280,42 +290,34 @@
                     <span class="player-id">${p.playerId}</span>
                     ${prof.lbl ? `<span class="profile-badge ${prof.cls}">${prof.lbl}</span>` : ''}
                 </div>
-                <span class="status-badge ${p.flagged ? 'flagged' : 'clean'}">${p.flagged ? 'DETECTED' : 'CLEAR'}</span>
+                <span class="status-badge ${p.flagged ? 'flagged' : 'clean'}">${p.flagged ? 'SPEEDING' : 'NORMAL'}</span>
             </div>
 
-            <div class="panel-container">
-                <!-- Kinematics Panel -->
-                <div class="data-panel">
-                    <span class="panel-title">Kinematics</span>
-                    <div class="data-row">
-                        <span class="d-label">Speed</span>
-                        <span class="d-val ${speedClass(p.lastSpeed)}">${fmt(p.lastSpeed)} u/s</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="d-label">Pos X,Z</span>
-                        <span class="d-val">${fmt(p.posX, 1)}, ${fmt(p.posZ, 1)}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="d-label">Pos Y</span>
-                        <span class="d-val">${fmt(p.posY, 1)}</span>
-                    </div>
+            <!-- Primary Speed Metrics Panel -->
+            <div class="data-panel">
+                <div class="panel-header-row">
+                    <span class="panel-title">3D Euclidean Velocity</span>
+                    <span class="speed-sub">Limit: <strong style="color:var(--text);">7.00 u/s</strong></span>
                 </div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <span class="speed-readout ${speedClass(speed)}">${fmt(speed)} <span style="font-size:12px; font-weight:500; color:var(--text2);">u/s</span></span>
+                </div>
+                <div class="gauge-track">
+                    <div class="threshold-marker" title="Max Legit Threshold (7.0u/s)"></div>
+                    <div class="gauge-fill" style="width: ${gaugePercent}%; background-color: ${gaugeColor};"></div>
+                </div>
+            </div>
 
-                <!-- Vision Panel -->
-                <div class="data-panel">
-                    <span class="panel-title">Vision / Aim</span>
-                    <div class="data-row">
-                        <span class="d-label">Ang. Vel</span>
-                        <span class="d-val ${angClass(p.angularVelocity)}">${fmt(p.angularVelocity)} rad/s</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="d-label">Yaw</span>
-                        <span class="d-val">${fmt(p.lastYaw, 3)}</span>
-                    </div>
-                    <div class="data-row">
-                        <span class="d-label">Pitch</span>
-                        <span class="d-val">${fmt(p.lastPitch, 3)}</span>
-                    </div>
+            <!-- Position & Spatial Panel -->
+            <div class="data-panel" style="gap: 6px;">
+                <span class="panel-title">Spatial Coordinates</span>
+                <div class="data-row">
+                    <span class="d-label">Position X, Z</span>
+                    <span class="d-val">${fmt(p.posX, 1)}, ${fmt(p.posZ, 1)}</span>
+                </div>
+                <div class="data-row">
+                    <span class="d-label">Elevation (Y)</span>
+                    <span class="d-val">${fmt(p.posY, 1)}</span>
                 </div>
             </div>
 
@@ -339,7 +341,6 @@
             empty.classList.add('visible');
         } else {
             empty.classList.remove('visible');
-            // Sort: Flagged first, then alphabetical
             const sorted = [...players].sort((a, b) => (b.flagged - a.flagged) || a.playerId.localeCompare(b.playerId));
             grid.innerHTML = sorted.map(renderCard).join('');
         }
@@ -357,14 +358,11 @@
 
             const incoming = await res.json();
             dot.className = 'live-dot active';
-            failCount = 0;
 
-            // Only update and re-render if new active telemetry was returned
             if (Array.isArray(incoming) && incoming.length > 0) {
                 lastKnownPlayers = incoming;
                 updateDashboard(lastKnownPlayers);
             } else if (lastKnownPlayers.length > 0) {
-                // If endpoint returns [] (stale session), keep rendered cache alive
                 updateDashboard(lastKnownPlayers);
             } else {
                 updateDashboard([]);
@@ -372,10 +370,8 @@
 
             document.getElementById('last-update').textContent = `SYNC: ${new Date().toLocaleTimeString()}`;
         } catch (e) {
-            failCount++;
             dot.className = 'live-dot error';
             document.getElementById('last-update').textContent = 'CONNECTION LOST';
-            // Retain active UI state even when connection drops
         }
     }
 
