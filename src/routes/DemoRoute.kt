@@ -9,29 +9,35 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.serialization.json.Json
 
-// Single-session demo: no registration, no session UUIDs. One anticheat
-// instance for the one game running. Real session management lives in
-// the old implementation
 private val demoAnticheat = AnticheatSession()
 
 fun Route.demoRoute() {
-    webSocket("/session/demo/start") {
-        try {
-            for (frame in incoming) {
-                if (frame is Frame.Text) {
-                    val telemetryRaw = frame.readText()
-                    val dto: TelemetryDTO = Json.decodeFromString(telemetryRaw)
-
-                    demoAnticheat.process(dto)
+    route("/session") {
+        webSocket("/demo/start") {
+            try {
+                for (frame in incoming) {
+                    if (frame is Frame.Text) {
+                        try {
+                            val telemetryRaw = frame.readText()
+                            val dto: TelemetryDTO = Json.decodeFromString(telemetryRaw)
+                            demoAnticheat.process(dto)
+                        } catch (e: Exception) {
+                            // Log or drop malformed payloads safely without crashing the WebSocket
+                        }
+                    }
                 }
+            } finally {
+                // no-op: demo session never ends
             }
-        } finally {
-            // no-op: demo session never "ends", it just keeps accepting telemetry
         }
-    }
 
-    get("/session/demo/status") {
-        call.respond(demoAnticheat.snapshot())
+        get("/demo/status") {
+            call.respond(demoAnticheat.snapshot())
+        }
+
+        get("/demo/metrics") {
+            call.respond(demoAnticheat.globalPerformanceReport())
+        }
     }
 
     get("/dashboard/demo") {
@@ -39,4 +45,6 @@ fun Route.demoRoute() {
     }
 }
 
-private val DASHBOARD_HTML = object {}.javaClass.getResource("/dashboard.html")!!.readText()
+private val DASHBOARD_HTML =
+    object {}.javaClass.getResource("/dashboard.html")?.readText()
+        ?: "<html><body><h3>Dashboard HTML resource not found.</h3></body></html>"

@@ -1,123 +1,386 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="business">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>anticheat // live</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>anticheat // telemetry</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace; }
-        .flagged-row { background-color: rgba(248, 114, 114, 0.08); }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:         #090B0E;
+            --surface:    #0F1217;
+            --surface2:   #141820;
+            --border:     #1A1F28;
+            --border2:    #232935;
+            --muted:      #2E3440;
+            --text:       #DDE1EC;
+            --text2:      #8B92A5;
+            --dim:        #525A6B;
+            --cyan:       #00C2FF;
+            --purple:     #B562FF;
+            --red:        #FF3E50;
+            --red-dim:    rgba(255, 62, 80, 0.10);
+            --amber:      #FFB830;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Scanline overlay ── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* ── Navbar ── */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            height: 54px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .nav-left, .nav-right { display: flex; align-items: center; gap: 16px; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; }
+
+        .live-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--muted); transition: 0.4s;
+        }
+        .live-dot.active {
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,194,255,0.3);
+            animation: pulse-dot 2.4s ease-in-out infinite;
+        }
+        .live-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .nav-title { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+        .nav-divider { width: 1px; height: 20px; background: var(--border2); }
+        .nav-sub { font-size: 10px; color: var(--dim); letter-spacing: 0.06em; font-style: italic; }
+        #last-update { font-size: 10px; color: var(--dim); letter-spacing: 0.05em; }
+
+        /* ── Clear Button ── */
+        .btn-clear {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-clear:hover {
+            background: rgba(255, 62, 80, 0.12);
+            border-color: rgba(255, 62, 80, 0.4);
+            color: var(--red);
+            box-shadow: 0 0 10px rgba(255, 62, 80, 0.15);
+        }
+        .btn-clear:active { transform: scale(0.96); }
+
+        /* ── Summary bar ── */
+        .summary { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+        .summary-stat {
+            display: flex; flex-direction: column; gap: 4px;
+            padding: 16px 40px 16px 32px; border-right: 1px solid var(--border); position: relative;
+        }
+        .summary-stat::after {
+            content: ''; position: absolute; bottom: 0; left: 32px; right: 40px;
+            height: 2px; border-radius: 2px 2px 0 0; opacity: 0; transition: 0.3s;
+        }
+        .summary-stat.has-data::after { opacity: 1; }
+        .summary-stat.s-players::after { background: var(--cyan); }
+        .summary-stat.s-flagged::after { background: var(--red); }
+
+        .summary-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+        .summary-value { font-size: 28px; font-weight: 700; line-height: 1; }
+        .summary-value.cyan { color: var(--cyan); }
+        .summary-value.red { color: var(--red); }
+
+        /* ── Main Grid ── */
+        main { padding: 28px 32px; flex: 1; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 16px; }
+
+        /* ── Card ── */
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; padding: 20px; position: relative;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: var(--border2); transition: 0.3s;
+        }
+        .card.clean::before { background: var(--cyan); }
+        .card.flagged::before { background: var(--red); animation: pulse-strip 2s infinite; }
+        .card.flagged {
+            border-color: rgba(255, 62, 80, 0.2);
+            background: linear-gradient(140deg, var(--red-dim) 0%, var(--surface) 55%);
+        }
+
+        @keyframes pulse-strip { 0%, 100% { box-shadow: 0 0 8px var(--red); opacity: 1; } 50% { box-shadow: none; opacity: 0.45; } }
+
+        /* ── Card Header ── */
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .card-identity { display: flex; flex-direction: column; gap: 6px; }
+        .player-id { font-size: 15px; font-weight: 700; color: var(--text); }
+
+        .profile-badge, .status-badge {
+            font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+            padding: 3px 8px; border-radius: 4px; border: 1px solid; width: fit-content;
+        }
+        .profile-badge.rage { color: var(--red); border-color: rgba(255,62,80,0.3); background: rgba(255,62,80,0.06); }
+        .profile-badge.closet, .profile-badge.burst { color: var(--amber); border-color: rgba(255,184,48,0.3); background: rgba(255,184,48,0.06); }
+        .profile-badge.legit { color: var(--dim); border-color: var(--border2); }
+        .profile-badge.human { color: var(--cyan); border-color: rgba(0,194,255,0.3); background: rgba(0,194,255,0.06); }
+
+        .status-badge.clean { color: var(--cyan); border-color: rgba(0, 194, 255, 0.25); background: rgba(0, 194, 255, 0.05); }
+        .status-badge.flagged { color: var(--red); border-color: rgba(255, 62, 80, 0.35); background: rgba(255, 62, 80, 0.07); }
+
+        /* ── Telemetry Panels ── */
+        .panel-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .data-panel { background: var(--surface2); padding: 12px; border-radius: 6px; border: 1px solid var(--border2); }
+        .panel-title { font-size: 9px; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; display: block; }
+
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px; }
+        .data-row:last-child { margin-bottom: 0; }
+        .d-label { color: var(--text2); }
+        .d-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        .val-hot { color: var(--red); text-shadow: 0 0 8px rgba(255,62,80,0.4); }
+        .val-warm { color: var(--amber); }
+        .val-cool { color: var(--cyan); }
+        .val-purp { color: var(--purple); }
+
+        /* ── Flags ── */
+        .flags { display: flex; gap: 6px; flex-wrap: wrap; }
+        .flag-tag {
+            font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+            padding: 4px 8px; border-radius: 4px;
+            background: var(--red); color: #fff;
+            box-shadow: 0 0 10px rgba(255, 62, 80, 0.3);
+        }
+
+        /* ── Empty State ── */
+        #empty { display: none; flex-direction: column; align-items: center; padding: 100px 0; gap: 12px; }
+        #empty.visible { display: flex; }
+        .empty-icon { width: 36px; height: 36px; border: 1px solid var(--border2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+        .empty-title { font-size: 12px; font-weight: 600; color: var(--text2); }
     </style>
 </head>
-<body class="min-h-screen bg-base-300">
+<body>
 
-<div class="navbar bg-base-100 border-b border-base-content/10 px-6">
-    <div class="flex-1 flex items-center gap-2">
-        <span class="badge badge-sm" id="status-badge">connecting</span>
-        <span class="text-lg font-medium lowercase">anticheat // live</span>
+<nav>
+    <div class="nav-left">
+        <div class="nav-brand">
+            <div class="live-dot" id="live-dot"></div>
+            <span class="nav-title">anticheat // live</span>
+        </div>
+    </div>
+    <div class="nav-right">
+        <button class="btn-clear" id="btn-clear" onclick="clearTelemetry()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            CLEAR
+        </button>
+        <div class="nav-divider"></div>
+        <span id="last-update">—</span>
+    </div>
+</nav>
+
+<div class="summary">
+    <div class="summary-stat s-players" id="ss-players">
+        <span class="summary-label">Active Trackers</span>
+        <span class="summary-value cyan" id="stat-players">0</span>
+    </div>
+    <div class="summary-stat s-flagged" id="ss-flagged">
+        <span class="summary-label">Anomalies Detected</span>
+        <span class="summary-value red" id="stat-flagged">0</span>
     </div>
 </div>
 
-<main class="p-6">
-
-    <div class="stats shadow bg-base-100 mb-6" id="summary-stats">
-        <div class="stat">
-            <div class="stat-title">players</div>
-            <div class="stat-value text-lg" id="stat-players">0</div>
-        </div>
-        <div class="stat">
-            <div class="stat-title">flagged</div>
-            <div class="stat-value text-lg text-error" id="stat-flagged">0</div>
-        </div>
+<main>
+    <div class="grid" id="grid"></div>
+    <div id="empty" class="visible">
+        <div class="empty-icon">◌</div>
+        <span class="empty-title">AWAITING TELEMETRY</span>
     </div>
-
-    <div class="overflow-x-auto bg-base-100 rounded-box shadow">
-        <table class="table">
-            <thead>
-            <tr>
-                <th>player</th>
-                <th>status</th>
-                <th>pos</th>
-                <th>speed</th>
-                <th>speed precision</th>
-                <th>speed recall</th>
-                <th>flags</th>
-            </tr>
-            </thead>
-            <tbody id="rows"></tbody>
-        </table>
-        <div class="text-center text-base-content/50 py-10 hidden" id="empty">no telemetry yet</div>
-    </div>
-
 </main>
 
 <script>
-    const statusBadge = document.getElementById('status-badge');
-    const rowsEl = document.getElementById('rows');
-    const emptyEl = document.getElementById('empty');
+    const dot = document.getElementById('live-dot');
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('empty');
     const statPlayers = document.getElementById('stat-players');
     const statFlagged = document.getElementById('stat-flagged');
 
+    let lastKnownPlayers = [];
     let failCount = 0;
-    const FAIL_LIMIT = 5; // ~5s of no response before the dashboard clears itself
 
-    function fmt(n) {
-        return Number(n).toFixed(2);
+    const fmt = (n, d = 2) => Number(n || 0).toFixed(d);
+
+    function speedClass(s) {
+        if (s > 7.5) return 'val-hot';
+        if (s > 6.0) return 'val-warm';
+        return 'val-cool';
     }
 
-    function render(players) {
+    function angClass(v) {
+        if (v > 45.0) return 'val-hot';
+        if (v > 20.0) return 'val-warm';
+        return 'val-purp';
+    }
+
+    function profileData(p) {
+        if (!p) return { cls: '', lbl: '' };
+        const key = p.toLowerCase();
+        if (key === 'human_player') return { cls: 'human', lbl: 'human' };
+        if (key.includes('rage'))   return { cls: 'rage', lbl: 'rage bot' };
+        if (key.includes('closet')) return { cls: 'closet', lbl: 'closet bot' };
+        if (key.includes('burst'))  return { cls: 'burst', lbl: 'burst bot' };
+        return { cls: 'legit', lbl: 'unknown' };
+    }
+
+    function renderCard(p) {
+        const prof = profileData(p.cheaterProfile);
+        const flags = Array.isArray(p.flags) ? p.flags : [];
+
+        return `
+        <div class="card ${p.flagged ? 'flagged' : 'clean'}">
+            <div class="card-header">
+                <div class="card-identity">
+                    <span class="player-id">${p.playerId}</span>
+                    ${prof.lbl ? `<span class="profile-badge ${prof.cls}">${prof.lbl}</span>` : ''}
+                </div>
+                <span class="status-badge ${p.flagged ? 'flagged' : 'clean'}">${p.flagged ? 'DETECTED' : 'CLEAR'}</span>
+            </div>
+
+            <div class="panel-container">
+                <!-- Kinematics Panel -->
+                <div class="data-panel">
+                    <span class="panel-title">Kinematics</span>
+                    <div class="data-row">
+                        <span class="d-label">Speed</span>
+                        <span class="d-val ${speedClass(p.lastSpeed)}">${fmt(p.lastSpeed)} u/s</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="d-label">Pos X,Z</span>
+                        <span class="d-val">${fmt(p.posX, 1)}, ${fmt(p.posZ, 1)}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="d-label">Pos Y</span>
+                        <span class="d-val">${fmt(p.posY, 1)}</span>
+                    </div>
+                </div>
+
+                <!-- Vision Panel -->
+                <div class="data-panel">
+                    <span class="panel-title">Vision / Aim</span>
+                    <div class="data-row">
+                        <span class="d-label">Ang. Vel</span>
+                        <span class="d-val ${angClass(p.angularVelocity)}">${fmt(p.angularVelocity)} rad/s</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="d-label">Yaw</span>
+                        <span class="d-val">${fmt(p.lastYaw, 3)}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="d-label">Pitch</span>
+                        <span class="d-val">${fmt(p.lastPitch, 3)}</span>
+                    </div>
+                </div>
+            </div>
+
+            ${flags.length ? `
+            <div class="flags">
+                ${flags.map(f => `<span class="flag-tag">${f}</span>`).join('')}
+            </div>` : ''}
+        </div>`;
+    }
+
+    function updateDashboard(players) {
+        const flagged = players.filter(p => p.flagged).length;
         statPlayers.textContent = players.length;
-        statFlagged.textContent = players.filter(p => p.flagged).length;
+        statFlagged.textContent = flagged;
+
+        document.getElementById('ss-players').classList.toggle('has-data', players.length > 0);
+        document.getElementById('ss-flagged').classList.toggle('has-data', players.length > 0);
 
         if (!players.length) {
-            rowsEl.innerHTML = '';
-            emptyEl.classList.remove('hidden');
-            return;
+            grid.innerHTML = '';
+            empty.classList.add('visible');
+        } else {
+            empty.classList.remove('visible');
+            // Sort: Flagged first, then alphabetical
+            const sorted = [...players].sort((a, b) => (b.flagged - a.flagged) || a.playerId.localeCompare(b.playerId));
+            grid.innerHTML = sorted.map(renderCard).join('');
         }
-        emptyEl.classList.add('hidden');
+    }
 
-        rowsEl.innerHTML = players.map(p => `
-    <tr class="${p.flagged ? 'flagged-row' : ''}">
-      <td class="font-medium">${p.playerId}</td>
-      <td><span class="badge ${p.flagged ? 'badge-error' : 'badge-success'} badge-outline badge-sm">${p.flagged ? 'flagged' : 'clean'}</span></td>
-      <td class="text-base-content/70">${fmt(p.posX)}, ${fmt(p.posY)}, ${fmt(p.posZ)}</td>
-      <td>${fmt(p.lastSpeed)} u/s</td>
-      <td>${fmt(p.accuracy.speedHackPrecision * 100)}%</td>
-      <td>${fmt(p.accuracy.speedHackRecall * 100)}%</td>
-      <td class="text-xs text-base-content/60">${p.flags.join(' / ') || '-'}</td>
-    </tr>
-  `).join('');
+    function clearTelemetry() {
+        lastKnownPlayers = [];
+        updateDashboard([]);
     }
 
     async function poll() {
         try {
             const res = await fetch('/session/demo/status');
-            if (!res.ok) {
-                handleFailure();
-                return;
-            }
-            statusBadge.textContent = 'live';
-            statusBadge.className = 'badge badge-sm badge-success';
-            failCount = 0;
-            const players = await res.json();
-            render(players);
-        } catch (e) {
-            handleFailure();
-        }
-    }
+            if (!res.ok) throw new Error('Bad response');
 
-    function handleFailure() {
-        failCount++;
-        statusBadge.textContent = 'down';
-        statusBadge.className = 'badge badge-sm badge-error';
-        if (failCount >= FAIL_LIMIT) {
-            render([]);
+            const incoming = await res.json();
+            dot.className = 'live-dot active';
+            failCount = 0;
+
+            // Only update and re-render if new active telemetry was returned
+            if (Array.isArray(incoming) && incoming.length > 0) {
+                lastKnownPlayers = incoming;
+                updateDashboard(lastKnownPlayers);
+            } else if (lastKnownPlayers.length > 0) {
+                // If endpoint returns [] (stale session), keep rendered cache alive
+                updateDashboard(lastKnownPlayers);
+            } else {
+                updateDashboard([]);
+            }
+
+            document.getElementById('last-update').textContent = `SYNC: ${new Date().toLocaleTimeString()}`;
+        } catch (e) {
+            failCount++;
+            dot.className = 'live-dot error';
+            document.getElementById('last-update').textContent = 'CONNECTION LOST';
+            // Retain active UI state even when connection drops
         }
     }
 
     poll();
-    setInterval(poll, 1000);
+    setInterval(poll, 500);
 </script>
 
 </body>

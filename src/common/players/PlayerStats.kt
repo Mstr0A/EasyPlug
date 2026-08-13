@@ -5,6 +5,7 @@ data class PlayerStats(
     var lastY: Float = 0f,
     var lastZ: Float = 0f,
     var lastTimestamp: Double = 0.0,
+    var lastSpeed: Float = 0f,
     var hasSample: Boolean = false,
 )
 

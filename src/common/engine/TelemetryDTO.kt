@@ -1,28 +1,46 @@
 package com.a0.common.engine
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class TelemetryDTO(
-    @SerialName("player_id")
     val playerId: String,
-    // Time.get_unix_time_from_system() in Godot returns seconds (float), not ms.
-    val timestamp: Double,
-    // Movement
-    @SerialName("pos_x")
     val posX: Float,
-    @SerialName("pos_y")
     val posY: Float,
-    @SerialName("pos_z")
     val posZ: Float,
-    // Status
-    val health: Float,
-    // Ground truth (bots set a real profile/flags; human client sends "HUMAN_PLAYER" + its own demo toggle)
-    @SerialName("cheater_profile")
+    val lookYaw: Float = 0f,
+    val lookPitch: Float = 0f,
     val cheaterProfile: String? = null,
-    @SerialName("ground_truth_speed_hack")
     val groundTruthSpeedHack: Boolean = false,
-    @SerialName("ground_truth_aimbot")
     val groundTruthAimbot: Boolean = false,
+    val isRespawn: Boolean = false,
+    val health: Float = 100f,
+    val timestamp: Double,
+)
+
+@Serializable
+data class AccuracyReport(
+    val playerId: String,
+    val speedHackPrecision: Float,
+    val speedHackRecall: Float,
+    val aimbotPrecision: Float,
+    val aimbotRecall: Float,
+)
+
+@Serializable
+data class GlobalPerformanceReport(
+    val totalPlayersTracked: Int,
+    val speedHackMetrics: DetectorMetricSummary,
+    val aimbotMetrics: DetectorMetricSummary,
+)
+
+@Serializable
+data class DetectorMetricSummary(
+    val truePositives: Int,
+    val falsePositives: Int,
+    val trueNegatives: Int,
+    val falseNegatives: Int,
+    val precision: Float,
+    val recall: Float,
+    val accuracy: Float,
 )
