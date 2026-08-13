@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:property-naming")
+
 package com.a0.common.engine
 
 import com.a0.common.players.PlayerReport
