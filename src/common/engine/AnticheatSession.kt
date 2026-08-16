@@ -90,45 +90,47 @@ class AnticheatSession {
 
         var speedHackDetected = false
 
-        if (state.hasSample) {
-            val isRespawn = telemetry.isRespawn || ((telemetry.health - state.lastHealth) >= RESPAWN_HEALTH_JUMP)
-            val dt = telemetry.timestamp - state.lastTimestamp
-
-            if (isRespawn) {
-                state.speedStreak = 0
-                state.lastSpeed = 0f
-                updateBaseline(state, telemetry)
-                return
-            }
-
-            if (dt >= MIN_DT) {
-                val dtFloat = dt.toFloat()
-
-                // -------------------------------------------------------------
-                // SPEED EVALUATION (Full 3D Euclidean Vector Check)
-                // -------------------------------------------------------------
-                val dx = telemetry.posX - state.lastX
-                val dy = telemetry.posY - state.lastY
-                val dz = telemetry.posZ - state.lastZ
-                val totalDistance = sqrt((dx * dx + dy * dy + dz * dz).toDouble()).toFloat()
-                val speed = totalDistance / dtFloat
-                state.lastSpeed = speed
-
-                if (speed > MAX_LEGIT_SPEED) {
-                    state.speedStreak++
-                    if (state.speedStreak >= SPEED_STREAK_TO_FLAG) {
-                        speedHackDetected = true
-                        state.flags.add("SPEED_HACK")
-                    }
-                } else {
-                    state.speedStreak = maxOf(0, state.speedStreak - 1)
-                }
-
-                updateBaseline(state, telemetry)
-            }
-        } else {
+        // To check if we saw this player before or not
+        if (!state.hasSample) {
             updateBaseline(state, telemetry)
             state.hasSample = true
+        }
+
+        val isRespawn = telemetry.isRespawn || ((telemetry.health - state.lastHealth) >= RESPAWN_HEALTH_JUMP)
+
+        if (isRespawn) {
+            state.speedStreak = 0
+            state.lastSpeed = 0f
+            updateBaseline(state, telemetry)
+            return
+        }
+
+        val dt = telemetry.timestamp - state.lastTimestamp
+
+        if (dt >= MIN_DT) {
+            val dtFloat = dt.toFloat()
+
+            // -------------------------------------------------------------
+            // SPEED EVALUATION (Full 3D Euclidean Vector Check)
+            // -------------------------------------------------------------
+            val dx = telemetry.posX - state.lastX
+            val dy = telemetry.posY - state.lastY
+            val dz = telemetry.posZ - state.lastZ
+            val totalDistance = sqrt((dx * dx + dy * dy + dz * dz).toDouble()).toFloat()
+            val speed = totalDistance / dtFloat
+            state.lastSpeed = speed
+
+            if (speed > MAX_LEGIT_SPEED) {
+                state.speedStreak++
+                if (state.speedStreak >= SPEED_STREAK_TO_FLAG) {
+                    speedHackDetected = true
+                    state.flags.add("SPEED_HACK")
+                }
+            } else {
+                state.speedStreak = maxOf(0, state.speedStreak - 1)
+            }
+
+            updateBaseline(state, telemetry)
         }
 
         state.speedAccuracy.record(detected = speedHackDetected, groundTruth = telemetry.groundTruthSpeedHack)
