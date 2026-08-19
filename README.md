@@ -1,42 +1,76 @@
-# EasyPlug
-## **This needs to be re-written at some point**
+# Easy Plug Anti-Cheat
 
-This project was created using the [Ktor Project Generator](https://start.ktor.io).
+Server-side heuristic anti-cheat engine built with Ktor. Receives live telemetry from a game server over WebSocket, runs behavioral analysis, and exposes a live dashboard for monitoring.
 
-Here are some useful links to get you started:
+No client-side installation. No kernel drivers. Just a sidecar service your game server talks to.
 
-- [Ktor Documentation](https://ktor.io/docs/home.html)
-- [Ktor GitHub page](https://github.com/ktorio/ktor)
-- The [Ktor Slack chat](https://app.slack.com/client/T09229ZC6/C0A974TJ9). You'll need
-  to [request an invite](https://surveys.jetbrains.com/s3/kotlin-slack-sign-up) to join.
+---
 
-## Features
+## How It Works
 
-Here's a list of features included in this project:
+The game server connects to the engine via WebSocket and streams telemetry frames once per second per player. The engine calculates each player's movement speed using 3D Euclidean distance over time and flags anyone exceeding the legitimate movement threshold. Results are available live via a polling dashboard.
 
-| Name                                                                   | Description                                                                        |
-|------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-| [Call Logging](https://start.ktor.io/p/call-logging)                   | Logs client requests                                                               |
-| [Routing](https://start.ktor.io/p/routing)                             | Provides a structured routing DSL                                                  |
-| [Content Negotiation](https://start.ktor.io/p/content-negotiation)     | Provides automatic content conversion according to Content-Type and Accept headers |
-| [kotlinx.serialization](https://start.ktor.io/p/kotlinx-serialization) | Handles JSON serialization using kotlinx.serialization library                     |
-| [WebSockets](https://start.ktor.io/p/ktor-websockets)                  | Adds WebSocket protocol support for bidirectional client connections               |
-| [Exposed](https://start.ktor.io/p/exposed)                             | Adds Exposed database to your application                                          |
+---
 
-## Building & Running
+## Running
 
-To build or run the project, use one of the following tasks:
+Requires JDK 17+.
 
-| Task            | Description      |
-|-----------------|------------------|
-| `./amper test`  | Run the tests    |
-| `./amper build` | Build everything |
-| `./amper run`   | Run the server   |
-
-If the server starts successfully, you'll see the following output:
-
-```
-2024-12-04 14:32:45.584 [main] INFO  Application - Application started in 0.303 seconds.
-2024-12-04 14:32:45.682 [main] INFO  Application - Responding at http://0.0.0.0:8080
+```bash
+./amper run
 ```
 
+Server starts at `http://0.0.0.0:8080`. The dashboard is available at `http://localhost:8080/dashboard/demo`.
+
+---
+
+## Demo Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `WS` | `/session/demo/start` | WebSocket endpoint — stream telemetry frames here |
+| `GET` | `/session/demo/status` | Returns current live snapshot of all tracked players |
+| `GET` | `/dashboard/demo` | Live monitoring dashboard |
+
+---
+
+## Telemetry Frame Format
+
+Frames are sent as JSON over the WebSocket connection:
+
+```json
+{
+  "playerId": "BOT_1",
+  "timestamp": 1234567890.123,
+  "posX": 3.5,
+  "posY": 0.0,
+  "posZ": 2.1,
+  "health": 100.0,
+  "isRespawn": false,
+  "cheaterProfile": "LEGIT",
+  "groundTruthSpeedHack": false
+}
+```
+
+`cheaterProfile` and `groundTruthSpeedHack` are optional and used for accuracy tracking in simulation contexts.
+
+---
+
+## Detection Thresholds
+
+| Constant | Value | Reason |
+|----------|-------|--------|
+| `MAX_LEGIT_SPEED` | 7.0 u/s | Base movement speed (5.0) + slack for acceleration and jump arcs |
+| `SPEED_STREAK_TO_FLAG` | 1 | Frames above threshold before flagging |
+| `MIN_DT` | 0.001s | Minimum time delta to trust a speed calculation |
+| `RESPAWN_HEALTH_JUMP` | 25f | Health increase threshold for respawn detection |
+| `STALE_SECONDS` | 5s | Player removed from live snapshot after this period of inactivity |
+
+---
+
+## Stack
+
+- Ktor (Netty) — WebSocket + HTTP server
+- kotlinx.serialization — telemetry deserialization
+- Kotlin coroutines — session concurrency
+- Amper — build tooling
