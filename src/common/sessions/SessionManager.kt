@@ -5,6 +5,7 @@ import com.a0.common.players.PlayerReport
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+// Session management for actual games (unused in demo)
 object SessionManager {
     // Session variables
     private val _newSessions: MutableSet<UUID> = ConcurrentHashMap.newKeySet()

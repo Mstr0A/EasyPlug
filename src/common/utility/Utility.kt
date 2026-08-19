@@ -5,6 +5,10 @@ import io.ktor.server.application.*
 import io.ktor.server.response.*
 import java.util.*
 
+/*
+A set of unity functions to make things like getting UUIDs from strings easier
+ */
+
 fun String.toUUID(): UUID = UUID.fromString(this)
 
 suspend fun ApplicationCall.receiveSessionID(): UUID? =

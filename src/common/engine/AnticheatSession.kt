@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 import kotlin.math.sqrt
 import kotlin.time.TimeSource
 
+// To get the results of how accurate our engine is
 private data class DetectorAccuracy(
     var truePositives: Int = 0,
     var falsePositives: Int = 0,
@@ -40,6 +41,7 @@ private data class DetectorAccuracy(
         }
 }
 
+// Allows us to get a full view of the current player status while live and to send to the dashboard
 @Serializable
 data class PlayerSnapshot(
     val playerId: String,
@@ -53,6 +55,7 @@ data class PlayerSnapshot(
     val accuracy: AccuracyReport,
 )
 
+// The actual anti-cheat session
 class AnticheatSession {
     companion object {
         const val MAX_LEGIT_SPEED = 7f

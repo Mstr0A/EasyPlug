@@ -2,6 +2,10 @@ package com.a0.common.engine
 
 import kotlinx.serialization.Serializable
 
+/*
+The shape and the classes of telemetry data we get from the game
+ */
+
 @Serializable
 data class TelemetryDTO(
     val playerId: String,
