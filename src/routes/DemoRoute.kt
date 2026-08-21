@@ -35,8 +35,12 @@ fun Route.demoRoute() {
             call.respond(demoAnticheat.snapshot())
         }
 
-        get("/demo/metrics") {
+        get("/demo/metrics/raw") {
             call.respond(demoAnticheat.globalPerformanceReport())
+        }
+
+        get("/demo/metrics") {
+            call.respondText(METRICS_HTML, ContentType.Text.Html)
         }
     }
 
@@ -47,4 +51,8 @@ fun Route.demoRoute() {
 
 private val DASHBOARD_HTML =
     object {}.javaClass.getResource("/dashboard.html")?.readText()
+        ?: "<html><body><h3>Dashboard HTML resource not found.</h3></body></html>"
+
+private val METRICS_HTML =
+    object {}.javaClass.getResource("/metrics.html")?.readText()
         ?: "<html><body><h3>Dashboard HTML resource not found.</h3></body></html>"

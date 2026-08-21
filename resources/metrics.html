@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>anticheat // metrics</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:         #090B0E;
+            --surface:    #0F1217;
+            --surface2:   #141820;
+            --border:     #1A1F28;
+            --border2:    #232935;
+            --muted:      #2E3440;
+            --text:       #DDE1EC;
+            --text2:      #8B92A5;
+            --dim:        #525A6B;
+            --cyan:       #00C2FF;
+            --red:        #FF3E50;
+            --red-dim:    rgba(255, 62, 80, 0.10);
+            --amber:      #FFB830;
+            --green:      #22C55E;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            height: 54px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .nav-left, .nav-right { display: flex; align-items: center; gap: 16px; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; }
+
+        .live-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--muted); transition: 0.4s;
+        }
+        .live-dot.active {
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,194,255,0.3);
+            animation: pulse-dot 2.4s ease-in-out infinite;
+        }
+        .live-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .nav-title { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+        .nav-divider { width: 1px; height: 20px; background: var(--border2); }
+        #last-update { font-size: 10px; color: var(--dim); letter-spacing: 0.05em; }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: var(--surface);
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .btn:active { transform: scale(0.96); }
+
+        .btn-copy:hover {
+            background: rgba(0, 194, 255, 0.08);
+            border-color: rgba(0, 194, 255, 0.4);
+            color: var(--cyan);
+        }
+
+        .btn-copy.copied {
+            border-color: rgba(34, 197, 94, 0.4);
+            color: var(--green);
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        main { padding: 28px 32px; flex: 1; display: flex; flex-direction: column; gap: 24px; }
+
+        /* ── Summary strip ── */
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .stat-block {
+            background: var(--surface);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+        }
+
+        .stat-block::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 24px; right: 24px;
+            height: 2px;
+            border-radius: 2px 2px 0 0;
+        }
+
+        .stat-block.c-cyan::after  { background: var(--cyan); }
+        .stat-block.c-green::after { background: var(--green); }
+        .stat-block.c-amber::after { background: var(--amber); }
+        .stat-block.c-red::after   { background: var(--red); }
+
+        .stat-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+        .stat-value { font-size: 32px; font-weight: 700; line-height: 1; }
+        .stat-value.cyan  { color: var(--cyan); }
+        .stat-value.green { color: var(--green); }
+        .stat-value.amber { color: var(--amber); }
+        .stat-value.red   { color: var(--red); }
+        .stat-sub { font-size: 10px; color: var(--dim); }
+
+        /* ── Two col layout ── */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        /* ── Panel ── */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-title { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2); }
+        .panel-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+        /* ── Metric rows ── */
+        .metric-row { display: flex; flex-direction: column; gap: 6px; }
+
+        .metric-header { display: flex; justify-content: space-between; align-items: baseline; }
+        .metric-label { font-size: 10px; color: var(--text2); letter-spacing: 0.06em; }
+        .metric-value { font-size: 13px; font-weight: 700; }
+
+        .bar-track { height: 4px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* ── Confusion matrix ── */
+        .cm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .cm-cell {
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .cm-cell.tp { background: rgba(34, 197, 94, 0.06);  border-color: rgba(34, 197, 94, 0.2); }
+        .cm-cell.tn { background: rgba(0, 194, 255, 0.06);  border-color: rgba(0, 194, 255, 0.2); }
+        .cm-cell.fp { background: rgba(255, 184, 48, 0.06); border-color: rgba(255, 184, 48, 0.2); }
+        .cm-cell.fn { background: rgba(255, 62, 80, 0.06);  border-color: rgba(255, 62, 80, 0.2); }
+
+        .cm-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+        .cm-count { font-size: 24px; font-weight: 700; line-height: 1; }
+        .cm-cell.tp .cm-count { color: var(--green); }
+        .cm-cell.tn .cm-count { color: var(--cyan); }
+        .cm-cell.fp .cm-count { color: var(--amber); }
+        .cm-cell.fn .cm-count { color: var(--red); }
+        .cm-desc { font-size: 9px; color: var(--dim); }
+
+        /* ── Raw JSON ── */
+        .json-block {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 16px;
+            font-size: 11px;
+            color: var(--text2);
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.7;
+        }
+
+        .section-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+        }
+        .section-label { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+        .section-line { flex: 1; height: 1px; background: var(--border); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-left">
+        <div class="nav-brand">
+            <div class="live-dot" id="live-dot"></div>
+            <span class="nav-title">anticheat // metrics</span>
+        </div>
+        <div class="nav-divider"></div>
+    </div>
+    <div class="nav-right">
+        <button class="btn btn-copy" id="btn-copy" onclick="copyJSON()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            COPY JSON
+        </button>
+        <div class="nav-divider"></div>
+        <a class="btn" href="/dashboard/demo">← DASHBOARD</a>
+        <div class="nav-divider"></div>
+        <span id="last-update">—</span>
+    </div>
+</nav>
+
+<main>
+    <!-- Summary strip -->
+    <div class="summary-strip">
+        <div class="stat-block c-cyan">
+            <span class="stat-label">Accuracy</span>
+            <span class="stat-value cyan" id="s-accuracy">—</span>
+            <span class="stat-sub">overall correct classifications</span>
+        </div>
+        <div class="stat-block c-green">
+            <span class="stat-label">Precision</span>
+            <span class="stat-value green" id="s-precision">—</span>
+            <span class="stat-sub">flags that were correct</span>
+        </div>
+        <div class="stat-block c-amber">
+            <span class="stat-label">Recall</span>
+            <span class="stat-value amber" id="s-recall">—</span>
+            <span class="stat-sub">cheaters caught</span>
+        </div>
+        <div class="stat-block c-red">
+            <span class="stat-label">F1 Score</span>
+            <span class="stat-value red" id="s-f1">—</span>
+            <span class="stat-sub">precision / recall balance</span>
+        </div>
+    </div>
+
+    <!-- Two col -->
+    <div class="two-col">
+
+        <!-- Confusion matrix -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Confusion Matrix</span>
+                <span style="font-size:10px; color:var(--dim)" id="s-total">— samples</span>
+            </div>
+            <div class="panel-body">
+                <div class="cm-grid">
+                    <div class="cm-cell tp">
+                        <span class="cm-label">True Positive</span>
+                        <span class="cm-count" id="cm-tp">—</span>
+                        <span class="cm-desc">correctly flagged</span>
+                    </div>
+                    <div class="cm-cell tn">
+                        <span class="cm-label">True Negative</span>
+                        <span class="cm-count" id="cm-tn">—</span>
+                        <span class="cm-desc">correctly cleared</span>
+                    </div>
+                    <div class="cm-cell fp">
+                        <span class="cm-label">False Positive</span>
+                        <span class="cm-count" id="cm-fp">—</span>
+                        <span class="cm-desc">wrongly flagged</span>
+                    </div>
+                    <div class="cm-cell fn">
+                        <span class="cm-label">False Negative</span>
+                        <span class="cm-count" id="cm-fn">—</span>
+                        <span class="cm-desc">missed detections</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric bars -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Detection Performance</span>
+                <span style="font-size:10px; color:var(--dim)" id="s-players">— players</span>
+            </div>
+            <div class="panel-body">
+                <div class="metric-row">
+                    <div class="metric-header">
+                        <span class="metric-label">Precision</span>
+                        <span class="metric-value" id="b-precision" style="color:var(--green)">—</span>
+                    </div>
+                    <div class="bar-track"><div class="bar-fill" id="bar-precision" style="background:var(--green); width:0%"></div></div>
+                </div>
+                <div class="metric-row">
+                    <div class="metric-header">
+                        <span class="metric-label">Recall</span>
+                        <span class="metric-value" id="b-recall" style="color:var(--amber)">—</span>
+                    </div>
+                    <div class="bar-track"><div class="bar-fill" id="bar-recall" style="background:var(--amber); width:0%"></div></div>
+                </div>
+                <div class="metric-row">
+                    <div class="metric-header">
+                        <span class="metric-label">Accuracy</span>
+                        <span class="metric-value" id="b-accuracy" style="color:var(--cyan)">—</span>
+                    </div>
+                    <div class="bar-track"><div class="bar-fill" id="bar-accuracy" style="background:var(--cyan); width:0%"></div></div>
+                </div>
+                <div class="metric-row">
+                    <div class="metric-header">
+                        <span class="metric-label">False Positive Rate</span>
+                        <span class="metric-value" id="b-fpr" style="color:var(--red)">—</span>
+                    </div>
+                    <div class="bar-track"><div class="bar-fill" id="bar-fpr" style="background:var(--red); width:0%"></div></div>
+                </div>
+                <div class="metric-row">
+                    <div class="metric-header">
+                        <span class="metric-label">False Negative Rate</span>
+                        <span class="metric-value" id="b-fnr" style="color:var(--red)">—</span>
+                    </div>
+                    <div class="bar-track"><div class="bar-fill" id="bar-fnr" style="background:var(--red); width:0%"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Raw JSON -->
+    <div>
+        <div class="section-header">
+            <span class="section-label">Raw Report</span>
+            <div class="section-line"></div>
+        </div>
+        <pre class="json-block" id="raw-json">fetching...</pre>
+    </div>
+</main>
+
+<script>
+    const dot = document.getElementById('live-dot');
+    let rawData = null;
+
+    const pct  = n => (Number(n) * 100).toFixed(2) + '%';
+    const num  = n => Number(n).toLocaleString();
+    const f1   = (p, r) => (2 * p * r / (p + r));
+
+    function render(data) {
+        const m = data.speedHackMetrics;
+        const total = m.truePositives + m.falsePositives + m.trueNegatives + m.falseNegatives;
+        const fpr = m.falsePositives / (m.falsePositives + m.trueNegatives);
+        const fnr = m.falseNegatives / (m.falseNegatives + m.truePositives);
+        const f1Score = f1(m.precision, m.recall);
+
+        // Summary strip
+        document.getElementById('s-accuracy').textContent  = pct(m.accuracy);
+        document.getElementById('s-precision').textContent = pct(m.precision);
+        document.getElementById('s-recall').textContent    = pct(m.recall);
+        document.getElementById('s-f1').textContent        = f1Score.toFixed(4);
+        document.getElementById('s-total').textContent     = `${num(total)} samples`;
+        document.getElementById('s-players').textContent   = `${data.totalPlayersTracked} players`;
+
+        // Confusion matrix
+        document.getElementById('cm-tp').textContent = num(m.truePositives);
+        document.getElementById('cm-tn').textContent = num(m.trueNegatives);
+        document.getElementById('cm-fp').textContent = num(m.falsePositives);
+        document.getElementById('cm-fn').textContent = num(m.falseNegatives);
+
+        // Bars
+        const setBar = (id, barId, val, scale = 1) => {
+            document.getElementById(id).textContent    = pct(val);
+            document.getElementById(barId).style.width = `${Math.min(100, val * 100 * scale)}%`;
+        };
+
+        setBar('b-precision', 'bar-precision', m.precision);
+        setBar('b-recall',    'bar-recall',    m.recall);
+        setBar('b-accuracy',  'bar-accuracy',  m.accuracy);
+        setBar('b-fpr',       'bar-fpr',       fpr, 10); // scaled up so small values are visible
+        setBar('b-fnr',       'bar-fnr',       fnr, 10);
+
+        // Raw JSON
+        document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function copyJSON() {
+        if (!rawData) return;
+        await navigator.clipboard.writeText(JSON.stringify(rawData, null, 2));
+        const btn = document.getElementById('btn-copy');
+        btn.classList.add('copied');
+        btn.textContent = '✓ COPIED';
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> COPY JSON`;
+        }, 2000);
+    }
+
+    async function poll() {
+        try {
+            const res = await fetch('/session/demo/metrics/raw');
+            if (!res.ok) throw new Error();
+            rawData = await res.json();
+            dot.className = 'live-dot active';
+            render(rawData);
+            document.getElementById('last-update').textContent = `SYNC: ${new Date().toLocaleTimeString()}`;
+        } catch {
+            dot.className = 'live-dot error';
+            document.getElementById('last-update').textContent = 'CONNECTION LOST';
+        }
+    }
+
+    poll();
+    setInterval(poll, 2000);
+</script>
+</body>
+</html>
