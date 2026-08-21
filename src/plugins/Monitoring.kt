@@ -10,7 +10,9 @@ fun Application.configureMonitoring() {
         level = Level.INFO
         filter { call ->
             call.request.path().startsWith("/") &&
-                (!call.request.path().contains("/session/demo/status") || !call.request.path().contains("/session/demo/metrics/raw"))
+                !call.request.path().contains("/session/demo/status") &&
+                !call.request.path().contains("/session/demo/metrics/raw") &&
+                !call.request.path().contains("/session/demo/history/raw")
         }
     }
 }

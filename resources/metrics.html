@@ -216,6 +216,11 @@
         .cm-cell.tn .cm-count { color: var(--cyan); }
         .cm-cell.fp .cm-count { color: var(--amber); }
         .cm-cell.fn .cm-count { color: var(--red); }
+        .cm-pct { font-size: 12px; font-weight: 600; }
+        .cm-cell.tp .cm-pct { color: var(--green); opacity: 0.75; }
+        .cm-cell.tn .cm-pct { color: var(--cyan); opacity: 0.75; }
+        .cm-cell.fp .cm-pct { color: var(--amber); opacity: 0.75; }
+        .cm-cell.fn .cm-pct { color: var(--red); opacity: 0.75; }
         .cm-desc { font-size: 9px; color: var(--dim); }
 
         /* ── Raw JSON ── */
@@ -302,21 +307,25 @@
                     <div class="cm-cell tp">
                         <span class="cm-label">True Positive</span>
                         <span class="cm-count" id="cm-tp">—</span>
+                        <span class="cm-pct" id="cm-tp-pct">—</span>
                         <span class="cm-desc">correctly flagged</span>
                     </div>
                     <div class="cm-cell tn">
                         <span class="cm-label">True Negative</span>
                         <span class="cm-count" id="cm-tn">—</span>
+                        <span class="cm-pct" id="cm-tn-pct">—</span>
                         <span class="cm-desc">correctly cleared</span>
                     </div>
                     <div class="cm-cell fp">
                         <span class="cm-label">False Positive</span>
                         <span class="cm-count" id="cm-fp">—</span>
+                        <span class="cm-pct" id="cm-fp-pct">—</span>
                         <span class="cm-desc">wrongly flagged</span>
                     </div>
                     <div class="cm-cell fn">
                         <span class="cm-label">False Negative</span>
                         <span class="cm-count" id="cm-fn">—</span>
+                        <span class="cm-pct" id="cm-fn-pct">—</span>
                         <span class="cm-desc">missed detections</span>
                     </div>
                 </div>
@@ -393,6 +402,7 @@
         const fpr = m.falsePositives / (m.falsePositives + m.trueNegatives);
         const fnr = m.falseNegatives / (m.falseNegatives + m.truePositives);
         const f1Score = f1(m.precision, m.recall);
+        const shareOfTotal = n => total > 0 ? ((n / total) * 100).toFixed(1) + '% of total' : '—';
 
         // Summary strip
         document.getElementById('s-accuracy').textContent  = pct(m.accuracy);
@@ -407,6 +417,11 @@
         document.getElementById('cm-tn').textContent = num(m.trueNegatives);
         document.getElementById('cm-fp').textContent = num(m.falsePositives);
         document.getElementById('cm-fn').textContent = num(m.falseNegatives);
+
+        document.getElementById('cm-tp-pct').textContent = shareOfTotal(m.truePositives);
+        document.getElementById('cm-tn-pct').textContent = shareOfTotal(m.trueNegatives);
+        document.getElementById('cm-fp-pct').textContent = shareOfTotal(m.falsePositives);
+        document.getElementById('cm-fn-pct').textContent = shareOfTotal(m.falseNegatives);
 
         // Bars
         const setBar = (id, barId, val, scale = 1) => {

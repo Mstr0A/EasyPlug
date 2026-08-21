@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>anticheat // history</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:         #090B0E;
+            --surface:    #0F1217;
+            --surface2:   #141820;
+            --border:     #1A1F28;
+            --border2:    #232935;
+            --muted:      #2E3440;
+            --text:       #DDE1EC;
+            --text2:      #8B92A5;
+            --dim:        #525A6B;
+            --cyan:       #00C2FF;
+            --red:        #FF3E50;
+            --amber:      #FFB830;
+            --green:      #22C55E;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            height: 54px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .nav-left, .nav-right { display: flex; align-items: center; gap: 16px; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; }
+
+        .live-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--muted); transition: 0.4s;
+        }
+        .live-dot.active {
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,194,255,0.3);
+            animation: pulse-dot 2.4s ease-in-out infinite;
+        }
+        .live-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .nav-title { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+        .nav-divider { width: 1px; height: 20px; background: var(--border2); }
+        #last-update { font-size: 10px; color: var(--dim); letter-spacing: 0.05em; }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: var(--surface);
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .btn:active { transform: scale(0.96); }
+
+        main { padding: 28px 32px; flex: 1; display: flex; flex-direction: column; gap: 24px; }
+
+        /* ── Summary strip ── */
+        .summary-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .stat-block {
+            background: var(--surface);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+        }
+
+        .stat-block::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 24px; right: 24px;
+            height: 2px;
+            border-radius: 2px 2px 0 0;
+        }
+
+        .stat-block.c-cyan::after  { background: var(--cyan); }
+        .stat-block.c-green::after { background: var(--green); }
+        .stat-block.c-amber::after { background: var(--amber); }
+        .stat-block.c-red::after   { background: var(--red); }
+
+        .stat-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+        .stat-value { font-size: 32px; font-weight: 700; line-height: 1; }
+        .stat-value.cyan  { color: var(--cyan); }
+        .stat-value.green { color: var(--green); }
+        .stat-value.amber { color: var(--amber); }
+        .stat-value.red   { color: var(--red); }
+        .stat-sub { font-size: 10px; color: var(--dim); }
+
+        /* ── Toolbar ── */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 11px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 220px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+        .search-input:focus { border-color: var(--cyan); }
+        .search-input::placeholder { color: var(--dim); }
+
+        .chip {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            padding: 7px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .chip:hover { border-color: var(--border2); color: var(--text); }
+        .chip.active { color: var(--bg); background: var(--cyan); border-color: var(--cyan); }
+        .chip.active.c-red { background: var(--red); border-color: var(--red); }
+
+        .toolbar-spacer { flex: 1; }
+        .result-count { font-size: 10px; color: var(--dim); letter-spacing: 0.05em; }
+
+        /* ── Player grid ── */
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 14px;
+        }
+
+        .player-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .player-card.is-flagged { border-color: rgba(255, 62, 80, 0.35); }
+        .player-card.is-suspect { border-color: rgba(255, 184, 48, 0.35); }
+
+        .player-head {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .player-id-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .status-dot.clear   { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+        .status-dot.flagged { background: var(--red); box-shadow: 0 0 6px rgba(255,62,80,0.5); }
+        .status-dot.suspect { background: var(--amber); box-shadow: 0 0 6px rgba(255,184,48,0.5); }
+
+        .player-id { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .player-profile { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
+
+        .badge {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 20px;
+            border: 1px solid;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .badge.flagged { color: var(--red);   border-color: rgba(255,62,80,0.35);  background: rgba(255,62,80,0.08); }
+        .badge.clear   { color: var(--green); border-color: rgba(34,197,94,0.35);  background: rgba(34,197,94,0.08); }
+
+        .player-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+        .metric-trio {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .mini-stat { display: flex; flex-direction: column; gap: 3px; }
+        .mini-label { font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+        .mini-value { font-size: 15px; font-weight: 700; }
+        .mini-value.cyan  { color: var(--cyan); }
+        .mini-value.green { color: var(--green); }
+        .mini-value.amber { color: var(--amber); }
+
+        .mini-delta { font-size: 9px; }
+        .mini-delta.up   { color: var(--green); }
+        .mini-delta.down { color: var(--red); }
+        .mini-delta.flat { color: var(--dim); }
+
+        .sparkline-wrap { display: flex; flex-direction: column; gap: 4px; }
+        .sparkline-label { font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+        .sparkline { width: 100%; height: 32px; display: block; }
+
+        .entry-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 9px;
+            color: var(--dim);
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .flag-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--red);
+        }
+
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--dim);
+            font-size: 11px;
+            letter-spacing: 0.05em;
+        }
+
+        .section-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 4px;
+        }
+        .section-label { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+        .section-line { flex: 1; height: 1px; background: var(--border); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-left">
+        <div class="nav-brand">
+            <div class="live-dot" id="live-dot"></div>
+            <span class="nav-title">anticheat // history</span>
+        </div>
+        <div class="nav-divider"></div>
+    </div>
+    <div class="nav-right">
+        <a class="btn" href="/session/demo/metrics">METRICS</a>
+        <div class="nav-divider"></div>
+        <a class="btn" href="/dashboard/demo">← DASHBOARD</a>
+        <div class="nav-divider"></div>
+        <span id="last-update">—</span>
+    </div>
+</nav>
+
+<main>
+    <!-- Summary strip -->
+    <div class="summary-strip">
+        <div class="stat-block c-cyan">
+            <span class="stat-label">Players Tracked</span>
+            <span class="stat-value cyan" id="s-total-players">—</span>
+            <span class="stat-sub">appearing in history</span>
+        </div>
+        <div class="stat-block c-red">
+            <span class="stat-label">Currently Flagged</span>
+            <span class="stat-value red" id="s-flagged">—</span>
+            <span class="stat-sub">as of latest snapshot</span>
+        </div>
+        <div class="stat-block c-amber">
+            <span class="stat-label">Likely False Positives</span>
+            <span class="stat-value amber" id="s-fp">—</span>
+            <span class="stat-sub">flagged but profile is legit/human</span>
+        </div>
+        <div class="stat-block c-green">
+            <span class="stat-label">Recorded Snapshots</span>
+            <span class="stat-value green" id="s-snapshots">—</span>
+            <span class="stat-sub">total history entries</span>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <input class="search-input" id="search" type="text" placeholder="filter by player id or profile…" oninput="applyFilters()">
+        <button class="chip active" data-filter="all" onclick="setFilter('all')">ALL</button>
+        <button class="chip" data-filter="flagged" onclick="setFilter('flagged')">FLAGGED</button>
+        <button class="chip" data-filter="clear" onclick="setFilter('clear')">CLEAR</button>
+        <button class="chip c-red" data-filter="suspect" onclick="setFilter('suspect')">POSSIBLE FALSE POSITIVE</button>
+        <div class="toolbar-spacer"></div>
+        <span class="result-count" id="result-count">—</span>
+    </div>
+
+    <div class="section-header">
+        <span class="section-label">Player Timelines</span>
+        <div class="section-line"></div>
+    </div>
+
+    <div class="player-grid" id="player-grid">
+        <div class="empty-state">fetching history…</div>
+    </div>
+</main>
+
+<script>
+    const dot = document.getElementById('live-dot');
+    let players = [];
+    let currentFilter = 'all';
+
+    const pct = n => (Number(n) * 100).toFixed(1) + '%';
+
+    // A player's profile marks them as legitimate, but the detector flagged them anyway.
+    const LEGIT_PROFILES = new Set(['LEGIT', 'HUMAN_PLAYER']);
+
+    function classify(player) {
+        const latest = player.entries[player.entries.length - 1];
+        if (!latest) return { status: 'clear', latest: null };
+        const isLegitProfile = LEGIT_PROFILES.has((latest.cheaterProfile || '').toUpperCase());
+        if (latest.flagged && isLegitProfile) return { status: 'suspect', latest };
+        if (latest.flagged) return { status: 'flagged', latest };
+        return { status: 'clear', latest };
+    }
+
+    function trend(entries, key) {
+        if (entries.length < 2) return { dir: 'flat', diff: 0 };
+        const prev = entries[entries.length - 2][key];
+        const curr = entries[entries.length - 1][key];
+        const diff = curr - prev;
+        if (Math.abs(diff) < 0.001) return { dir: 'flat', diff };
+        return { dir: diff > 0 ? 'up' : 'down', diff };
+    }
+
+    function deltaLabel(t, isRate = true) {
+        if (t.dir === 'flat') return '<span class="mini-delta flat">± steady</span>';
+        const arrow = t.dir === 'up' ? '▲' : '▼';
+        const val = isRate ? pct(Math.abs(t.diff)) : Math.abs(t.diff).toFixed(2);
+        return `<span class="mini-delta ${t.dir}">${arrow} ${val}</span>`;
+    }
+
+    function buildSparkline(values, color) {
+        if (values.length < 2) {
+            return `<svg class="sparkline" viewBox="0 0 100 32" preserveAspectRatio="none"></svg>`;
+        }
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = (max - min) || 1;
+        const step = 100 / (values.length - 1);
+        const points = values.map((v, i) => {
+            const x = i * step;
+            const y = 28 - ((v - min) / range) * 24;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        return `<svg class="sparkline" viewBox="0 0 100 32" preserveAspectRatio="none">
+            <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+    }
+
+    function formatTime(ts) {
+        try {
+            return new Date(ts).toLocaleString(undefined, { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        } catch {
+            return ts;
+        }
+    }
+
+    function renderCard(player) {
+        const { status, latest } = classify(player);
+        if (!latest) return '';
+
+        const precisionTrend = trend(player.entries, 'speedHackPrecision');
+        const recallTrend = trend(player.entries, 'speedHackRecall');
+        const speedTrend = trend(player.entries, 'lastSpeed');
+
+        const speedValues = player.entries.map(e => e.lastSpeed);
+        const speedColor = status === 'flagged' ? 'var(--red)' : status === 'suspect' ? 'var(--amber)' : 'var(--cyan)';
+
+        const cardClass = status === 'flagged' ? 'is-flagged' : status === 'suspect' ? 'is-suspect' : '';
+        const dotClass = status === 'flagged' ? 'flagged' : status === 'suspect' ? 'suspect' : 'clear';
+        const badgeHtml = latest.flagged
+            ? `<span class="badge flagged">${status === 'suspect' ? 'flagged · legit profile' : 'flagged'}</span>`
+            : `<span class="badge clear">clear</span>`;
+
+        const flagsHtml = latest.flags && latest.flags.length
+            ? `<span class="flag-pill">⚑ ${latest.flags.join(', ')}</span>`
+            : `<span style="font-size:9px; color:var(--dim);">no active flags</span>`;
+
+        return `
+        <div class="player-card ${cardClass}" data-id="${player.playerId.toLowerCase()}" data-profile="${(latest.cheaterProfile || '').toLowerCase()}" data-status="${status}">
+            <div class="player-head">
+                <div class="player-id-wrap">
+                    <div class="status-dot ${dotClass}"></div>
+                    <div>
+                        <div class="player-id">${player.playerId}</div>
+                        <div class="player-profile">${latest.cheaterProfile || 'unknown'}</div>
+                    </div>
+                </div>
+                ${badgeHtml}
+            </div>
+            <div class="player-body">
+                <div class="metric-trio">
+                    <div class="mini-stat">
+                        <span class="mini-label">Precision</span>
+                        <span class="mini-value green">${pct(latest.speedHackPrecision)}</span>
+                        ${deltaLabel(precisionTrend)}
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-label">Recall</span>
+                        <span class="mini-value amber">${pct(latest.speedHackRecall)}</span>
+                        ${deltaLabel(recallTrend)}
+                    </div>
+                    <div class="mini-stat">
+                        <span class="mini-label">Speed</span>
+                        <span class="mini-value cyan">${latest.lastSpeed.toFixed(2)}</span>
+                        ${deltaLabel(speedTrend, false)}
+                    </div>
+                </div>
+                <div class="sparkline-wrap">
+                    <span class="sparkline-label">speed over time · ${player.entries.length} snapshot${player.entries.length === 1 ? '' : 's'}</span>
+                    ${buildSparkline(speedValues, speedColor)}
+                </div>
+                <div class="entry-meta">
+                    ${flagsHtml}
+                    <span>${formatTime(latest.timestamp)}</span>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function setFilter(f) {
+        currentFilter = f;
+        document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === f));
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const q = document.getElementById('search').value.trim().toLowerCase();
+        const cards = document.querySelectorAll('.player-card');
+        let visible = 0;
+
+        cards.forEach(card => {
+            const matchesQuery = !q || card.dataset.id.includes(q) || card.dataset.profile.includes(q);
+            const matchesFilter = currentFilter === 'all' || card.dataset.status === currentFilter;
+            const show = matchesQuery && matchesFilter;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        document.getElementById('result-count').textContent = `${visible} / ${cards.length} shown`;
+    }
+
+    function renderSummary() {
+        let flagged = 0, suspect = 0, snapshots = 0;
+        players.forEach(p => {
+            snapshots += p.entries.length;
+            const { status } = classify(p);
+            if (status === 'flagged') flagged++;
+            if (status === 'suspect') suspect++;
+        });
+
+        document.getElementById('s-total-players').textContent = players.length;
+        document.getElementById('s-flagged').textContent = flagged + suspect;
+        document.getElementById('s-fp').textContent = suspect;
+        document.getElementById('s-snapshots').textContent = snapshots;
+    }
+
+    function render(data) {
+        players = data.slice().sort((a, b) => a.playerId.localeCompare(b.playerId));
+        renderSummary();
+
+        const grid = document.getElementById('player-grid');
+        if (players.length === 0) {
+            grid.innerHTML = `<div class="empty-state">no history recorded yet — snapshots are taken periodically once players are active</div>`;
+            document.getElementById('result-count').textContent = '0 / 0 shown';
+            return;
+        }
+
+        grid.innerHTML = players.map(renderCard).join('');
+        applyFilters();
+    }
+
+    async function load() {
+        try {
+            const res = await fetch('/session/demo/history/raw');
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            dot.className = 'live-dot active';
+            render(data);
+            document.getElementById('last-update').textContent = `SYNC: ${new Date().toLocaleTimeString()}`;
+        } catch {
+            dot.className = 'live-dot error';
+            document.getElementById('last-update').textContent = 'CONNECTION LOST';
+        }
+    }
+
+    load();
+    setInterval(load, 15000);
+</script>
+</body>
+</html>
