@@ -17,7 +17,7 @@ The game server connects to the engine via WebSocket and streams telemetry frame
 Requires JDK 17+.
 
 ```bash
-./amper run
+./kotlin run
 ```
 
 Server starts at `http://0.0.0.0:8080`. The dashboard is available at `http://localhost:8080/dashboard/demo`.
@@ -73,4 +73,4 @@ Frames are sent as JSON over the WebSocket connection:
 - Ktor (Netty) — WebSocket + HTTP server
 - kotlinx.serialization — telemetry deserialization
 - Kotlin coroutines — session concurrency
-- Amper — build tooling
+- Kotlin toolchain — build tooling
