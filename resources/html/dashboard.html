@@ -77,8 +77,8 @@
         .nav-divider { width: 1px; height: 20px; background: var(--border2); }
         #last-update { font-size: 10px; color: var(--dim); letter-spacing: 0.05em; }
 
-        /* ── Clear Button ── */
-        .btn-clear {
+        /* ── Standard Button ── */
+        .btn {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -93,14 +93,16 @@
             border-radius: 4px;
             cursor: pointer;
             transition: all 0.2s ease;
+            text-decoration: none;
         }
-        .btn-clear:hover {
-            background: rgba(255, 62, 80, 0.12);
-            border-color: rgba(255, 62, 80, 0.4);
-            color: var(--red);
-            box-shadow: 0 0 10px rgba(255, 62, 80, 0.15);
+
+        .btn:hover {
+            background: var(--surface);
+            border-color: var(--cyan);
+            color: var(--cyan);
         }
-        .btn-clear:active { transform: scale(0.96); }
+
+        .btn:active { transform: scale(0.96); }
 
         /* ── Summary bar ── */
         .summary { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
@@ -218,13 +220,7 @@
         </div>
     </div>
     <div class="nav-right">
-        <button class="btn-clear" id="btn-clear" onclick="clearTelemetry()">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-            CLEAR
-        </button>
+        <a class="btn" href="/">HOME</a>
         <div class="nav-divider"></div>
         <span id="last-update">—</span>
     </div>
@@ -344,11 +340,6 @@
             const sorted = [...players].sort((a, b) => (b.flagged - a.flagged) || a.playerId.localeCompare(b.playerId));
             grid.innerHTML = sorted.map(renderCard).join('');
         }
-    }
-
-    function clearTelemetry() {
-        lastKnownPlayers = [];
-        updateDashboard([]);
     }
 
     async function poll() {

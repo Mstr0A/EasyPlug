@@ -102,18 +102,6 @@
 
         .btn:active { transform: scale(0.96); }
 
-        .btn-copy:hover {
-            background: rgba(0, 194, 255, 0.08);
-            border-color: rgba(0, 194, 255, 0.4);
-            color: var(--cyan);
-        }
-
-        .btn-copy.copied {
-            border-color: rgba(34, 197, 94, 0.4);
-            color: var(--green);
-            background: rgba(34, 197, 94, 0.08);
-        }
-
         main { padding: 28px 32px; flex: 1; display: flex; flex-direction: column; gap: 24px; }
 
         /* ── Summary strip ── */
@@ -254,15 +242,7 @@
         <div class="nav-divider"></div>
     </div>
     <div class="nav-right">
-        <button class="btn btn-copy" id="btn-copy" onclick="copyJSON()">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            COPY JSON
-        </button>
-        <div class="nav-divider"></div>
-        <a class="btn" href="/dashboard/demo">← DASHBOARD</a>
+        <a class="btn" href="/">HOME</a>
         <div class="nav-divider"></div>
         <span id="last-update">—</span>
     </div>
@@ -437,18 +417,6 @@
 
         // Raw JSON
         document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
-    }
-
-    async function copyJSON() {
-        if (!rawData) return;
-        await navigator.clipboard.writeText(JSON.stringify(rawData, null, 2));
-        const btn = document.getElementById('btn-copy');
-        btn.classList.add('copied');
-        btn.textContent = '✓ COPIED';
-        setTimeout(() => {
-            btn.classList.remove('copied');
-            btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> COPY JSON`;
-        }, 2000);
     }
 
     async function poll() {
