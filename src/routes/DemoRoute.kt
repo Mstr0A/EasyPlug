@@ -25,8 +25,8 @@ private val demoHistoryRecorder =
 private val demoHistoryReader = HistoryReader(demoHistoryFile)
 
 fun Route.demoRoute() {
-    route("/session") {
-        webSocket("/demo/start") {
+    route("/session/demo") {
+        webSocket("/start") {
             try {
                 for (frame in incoming) {
                     if (frame is Frame.Text) {
@@ -44,29 +44,29 @@ fun Route.demoRoute() {
             }
         }
 
-        get("/demo/status") {
+        get("/status") {
             call.respond(demoAnticheat.snapshot())
         }
 
-        get("/demo/metrics/raw") {
+        get("/metrics/raw") {
             call.respond(demoAnticheat.globalPerformanceReport())
         }
 
-        get("/demo/metrics") {
+        get("/metrics") {
             call.respondText(METRICS_HTML, ContentType.Text.Html)
         }
 
-        get("/demo/history/raw") {
+        get("/history/raw") {
             call.respond(demoHistoryReader.readAllPlayers())
         }
 
-        get("/demo/history") {
+        get("/history") {
             call.respondText(HISTORY_HTML, ContentType.Text.Html)
         }
-    }
 
-    get("/dashboard/demo") {
-        call.respondText(DASHBOARD_HTML, ContentType.Text.Html)
+        get("/dashboard") {
+            call.respondText(DASHBOARD_HTML, ContentType.Text.Html)
+        }
     }
 }
 
