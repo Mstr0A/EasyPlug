@@ -25,6 +25,12 @@ private val demoHistoryRecorder =
 private val demoHistoryReader = HistoryReader(demoHistoryFile)
 
 fun Route.demoRoute() {
+    route("/") {
+        get {
+            call.respondText(INDEX_HTML, ContentType.Text.Html)
+        }
+    }
+
     route("/session/demo") {
         webSocket("/start") {
             try {
@@ -44,10 +50,12 @@ fun Route.demoRoute() {
             }
         }
 
+        // RAW
         get("/status") {
             call.respond(demoAnticheat.snapshot())
         }
 
+        // RAW
         get("/metrics/raw") {
             call.respond(demoAnticheat.globalPerformanceReport())
         }
@@ -56,6 +64,7 @@ fun Route.demoRoute() {
             call.respondText(METRICS_HTML, ContentType.Text.Html)
         }
 
+        // RAW
         get("/history/raw") {
             call.respond(demoHistoryReader.readAllPlayers())
         }
@@ -70,14 +79,18 @@ fun Route.demoRoute() {
     }
 }
 
+private val INDEX_HTML =
+    object {}.javaClass.getResource("/html/index.html")?.readText()
+        ?: "<html><body><h3>Index HTML resource not found.</h3></body></html>"
+
 private val DASHBOARD_HTML =
-    object {}.javaClass.getResource("/dashboard.html")?.readText()
+    object {}.javaClass.getResource("/html/dashboard.html")?.readText()
         ?: "<html><body><h3>Dashboard HTML resource not found.</h3></body></html>"
 
 private val METRICS_HTML =
-    object {}.javaClass.getResource("/metrics.html")?.readText()
+    object {}.javaClass.getResource("/html/metrics.html")?.readText()
         ?: "<html><body><h3>Metrics HTML resource not found.</h3></body></html>"
 
 private val HISTORY_HTML =
-    object {}.javaClass.getResource("/history.html")?.readText()
+    object {}.javaClass.getResource("/html/history.html")?.readText()
         ?: "<html><body><h3>History HTML resource not found.</h3></body></html>"

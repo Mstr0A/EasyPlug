@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>anticheat // hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:       #090B0E;
+            --surface:  #0F1217;
+            --surface2: #141820;
+            --border:   #1A1F28;
+            --border2:  #232935;
+            --muted:    #2E3440;
+            --text:     #DDE1EC;
+            --text2:    #8B92A5;
+            --dim:      #525A6B;
+            --cyan:     #00C2FF;
+            --red:      #FF3E50;
+            --amber:    #FFB830;
+            --green:    #22C55E;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            padding: 0 32px;
+            height: 54px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            gap: 16px;
+        }
+
+        .nav-brand { display: flex; align-items: center; gap: 10px; }
+
+        .live-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--muted); transition: 0.4s;
+        }
+        .live-dot.active {
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,194,255,0.3);
+            animation: pulse-dot 2.4s ease-in-out infinite;
+        }
+        .live-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+        .nav-title { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+
+        main {
+            padding: 48px 32px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            max-width: 860px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .hero { display: flex; flex-direction: column; gap: 10px; }
+        .hero-title { font-size: 28px; font-weight: 700; letter-spacing: 0.04em; }
+        .hero-sub { font-size: 12px; color: var(--dim); letter-spacing: 0.06em; }
+
+        .section-header { display: flex; align-items: center; gap: 10px; }
+        .section-label { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
+        .section-line { flex: 1; height: 1px; background: var(--border); }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .nav-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .nav-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: var(--border2);
+            transition: background 0.2s ease;
+        }
+
+        .nav-card:hover { background: var(--surface2); }
+        .nav-card:hover::before { background: var(--accent, var(--cyan)); }
+        .nav-card:hover { border-color: color-mix(in srgb, var(--accent, var(--cyan)) 30%, transparent); }
+        .nav-card:active { transform: scale(0.99); }
+
+        .nav-card.c-cyan  { --accent: var(--cyan); }
+        .nav-card.c-amber { --accent: var(--amber); }
+        .nav-card.c-green { --accent: var(--green); }
+
+        .card-icon { font-size: 18px; line-height: 1; }
+        .card-name { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
+        .card-desc { font-size: 10px; color: var(--text2); line-height: 1.6; }
+
+        .card-url {
+            font-size: 9px;
+            color: var(--dim);
+            letter-spacing: 0.06em;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .card-url.missing { color: var(--amber); opacity: 0.7; }
+
+        .status-pill {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid;
+            width: fit-content;
+        }
+        .status-pill.live        { color: var(--cyan);  border-color: rgba(0,194,255,0.3);  background: rgba(0,194,255,0.06); }
+        .status-pill.needs-route { color: var(--amber); border-color: rgba(255,184,48,0.3); background: rgba(255,184,48,0.06); }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-brand">
+        <div class="live-dot" id="live-dot"></div>
+        <span class="nav-title">anticheat // hub</span>
+    </div>
+</nav>
+
+<main>
+
+    <div class="hero">
+        <div class="hero-title">anticheat <span style="color:var(--dim);">//</span> demo</div>
+        <div class="hero-sub">select a view · session: demo</div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="section-header">
+            <span class="section-label">Views</span>
+            <div class="section-line"></div>
+        </div>
+        <div class="card-grid">
+
+            <a class="nav-card c-cyan" href="/session/demo/dashboard">
+                <span class="card-icon">⚡</span>
+                <span class="card-name">Dashboard</span>
+                <span class="card-desc">Live per-player velocity, flags, and spatial coordinates. Polls every 500ms.</span>
+                <span class="status-pill live">LIVE</span>
+            </a>
+
+            <a class="nav-card c-amber" href="/session/demo/history">
+                <span class="card-icon">🕓</span>
+                <span class="card-name">History</span>
+                <span class="card-desc">Player timelines, snapshot counts, speed sparklines, and false-positive classification.</span>
+                <span class="status-pill live">LIVE</span>
+            </a>
+
+            <a class="nav-card c-green" href="/session/demo/metrics">
+                <span class="card-icon">📊</span>
+                <span class="card-name">Metrics</span>
+                <span class="card-desc">Confusion matrix, precision, recall, F1 score, and raw JSON export.</span>
+                <span class="status-pill live">LIVE</span>
+            </a>
+
+        </div>
+    </div>
+
+</main>
+
+<script>
+    async function ping() {
+        try {
+            const res = await fetch('/session/demo/status');
+            document.getElementById('live-dot').className = res.ok ? 'live-dot active' : 'live-dot error';
+        } catch {
+            document.getElementById('live-dot').className = 'live-dot error';
+        }
+    }
+    ping();
+    setInterval(ping, 5000);
+</script>
+
+</body>
+</html>
