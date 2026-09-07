@@ -2,8 +2,7 @@
 extends Node
 
 var socket = WebSocketPeer.new()
-#var ktor_ws_url = "ws://127.0.0.1:8080/session/demo/start"
-var ktor_ws_url = "wss://easyplug.ameensonjuq.com/session/demo/start"
+var ktor_ws_url = "ws://127.0.0.1:8080/session/demo/start"
 var is_connected = false
 
 func _ready():
